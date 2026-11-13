@@ -20,3 +20,19 @@ class EncryptedPDFError(RagError):
 
 class NoExtractableTextError(RagError):
     """The PDF opened fine but contains no text layer (e.g. a scanned image)."""
+
+
+class EmbeddingModelUnavailableError(RagError):
+    """The embedding library or model needed here is not installed."""
+
+
+class VectorStoreError(RagError):
+    """A saved vector index is missing, incomplete or inconsistent."""
+
+
+class EmbedderMismatchError(RagError):
+    """A saved index was built with a different embedding model than the one in use.
+
+    Vectors from different models live in different spaces, so comparing them
+    gives meaningless scores. The index must be rebuilt instead.
+    """
