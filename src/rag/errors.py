@@ -26,6 +26,14 @@ class EmbeddingModelUnavailableError(RagError):
     """The embedding library or model needed here is not installed."""
 
 
+class LLMUnavailableError(RagError):
+    """The LLM client library or API key needed to generate answers is missing."""
+
+
+class LLMError(RagError):
+    """The LLM request failed or returned nothing usable."""
+
+
 class VectorStoreError(RagError):
     """A saved vector index is missing, incomplete or inconsistent."""
 

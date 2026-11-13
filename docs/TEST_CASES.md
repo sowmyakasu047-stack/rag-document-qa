@@ -120,3 +120,44 @@ Day 2 adds **41 test cases** (TC-31 to TC-71), bringing the total to **71**. The
 | TC-69 | Same data and query in the FAISS and NumPy stores | Same chunks in the same order; scores equal within 1e-5 |
 | TC-70 | `remove_source` and `k` larger than the store | Removal count correct; all remaining chunks returned |
 | TC-71 | Save and reload a FAISS store | Same metadata and search results |
+
+# Day 3 test cases
+
+Day 3 adds **21 test cases** (TC-72 to TC-92), bringing the total to **92**. They use a fake LLM,
+so they need no network and no API key.
+
+## Prompt building: `tests/test_prompt.py`
+
+| ID | Scenario | Expected result |
+| --- | --- | --- |
+| TC-72 | Two retrieved chunks | Numbered excerpts that carry their file name and page |
+| TC-73 | Question with surrounding spaces | Trimmed question placed after the excerpts block |
+| TC-74 | Document text containing `</excerpt>` and a fake `<excerpt>` | Escaped; exactly one real closing tag remains |
+| TC-75 | File name containing a quote | Escaped inside the `source` attribute |
+| TC-76 | System prompt content | Has the not-found sentence, citation rule, "untrusted" rule and no-outside-knowledge rule |
+
+## Claude client: `tests/test_llm.py`
+
+| ID | Scenario | Expected result |
+| --- | --- | --- |
+| TC-77 | `generate("SYS", "PROMPT")` with a reply of two text blocks and one other block | Request has model, max tokens, system and user message; text blocks are joined |
+| TC-78 | The API library raises a connection error | `LLMError` containing the cause |
+| TC-79 | Reply with no text | `LLMError` |
+| TC-80 | `anthropic` package not installed | `LLMUnavailableError` mentioning `pip install anthropic` |
+| TC-81 | No `ANTHROPIC_API_KEY` | `LLMUnavailableError` mentioning the variable |
+
+## Answering: `tests/test_answerer.py`
+
+| ID | Scenario | Expected result |
+| --- | --- | --- |
+| TC-82 | Reply cites `[1]` | `sources` lists only excerpt 1 with file and page 3; no warnings |
+| TC-83 | Reply uses `[1, 2]` and repeats `[2]` | Sources 1 and 2, once each |
+| TC-84 | Reply cites `[9]` with 3 excerpts | `[9]` ignored; warning added |
+| TC-85 | Reply cites nothing | Answer returned, no sources, "does not cite" warning |
+| TC-86 | Model replies with the not-found sentence | `answered` is False; no sources |
+| TC-87 | All chunks below `min_score` | Not-found message; the LLM is never called |
+| TC-88 | Blank question | `ValueError`; LLM not called |
+| TC-89 | LLM raises `LLMError` | Error reaches the caller |
+| TC-90 | `k=2` | Prompt holds exactly 2 excerpts, the question and the system rules |
+| TC-91 | `ask` command with a fake LLM | Exit 0; prints the answer and a Sources list with file and page |
+| TC-92 | `ask` command without an API key | Exit 1; `Error:` on stderr |

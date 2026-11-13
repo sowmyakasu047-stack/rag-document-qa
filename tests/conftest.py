@@ -49,3 +49,22 @@ def encrypt_pdf() -> Callable[[Path, str], Path]:
         return target
 
     return _encrypt
+
+
+class FakeLLM:
+    """Records what it is asked and replies with a scripted answer (no network needed)."""
+
+    def __init__(self, reply: str | Exception = "ok"):
+        self.reply = reply
+        self.calls: list[tuple[str, str]] = []
+
+    def generate(self, system: str, prompt: str) -> str:
+        self.calls.append((system, prompt))
+        if isinstance(self.reply, Exception):
+            raise self.reply
+        return self.reply
+
+
+@pytest.fixture
+def fake_llm() -> Callable[..., FakeLLM]:
+    return FakeLLM
