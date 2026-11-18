@@ -70,6 +70,24 @@ three excerpts exist, the marker stays plain text instead of pointing at nothing
 **Plain JavaScript, not TypeScript.** The build environment could not type-check TypeScript against
 React's types, so the code stays in JavaScript where every file could be run and tested.
 
+## Local model option (Ollama)
+
+Added after the first real run, because an API key is a barrier. `OllamaLLM` talks to Ollama's HTTP API
+(`/api/tags` to check readiness, `/api/chat` to answer) using only Python's standard library, so there
+is no new dependency. `make_llm("claude" | "ollama")` picks the provider; `--llm` selects it for
+`rag.server` and `rag.ask`.
+
+- **Readiness check with fix-it messages.** The constructor checks that Ollama answers and that the model is
+  installed, and the error names the exact command (`ollama pull llama3.2`). Failures are not cached, so
+  fixing the problem needs no restart.
+- **Loopback requests bypass system proxies**, which would otherwise send `127.0.0.1` traffic to a proxy.
+  The default address is `127.0.0.1`, not `localhost`, because on some Windows setups `localhost` resolves to
+  IPv6 first while Ollama listens on IPv4.
+- **Small models are less obedient.** The answer check now accepts the "not found" sentence in quotes or other
+  case, and `<think>…</think>` blocks from reasoning models are stripped. Citations are still only trusted
+  when they match a real excerpt.
+- **Verified against a fake Ollama server over real HTTP** (`TC-129` to `TC-143`), not against Ollama itself.
+
 ## Observations from testing
 
 - Driving the real app in a browser found a defect that unit tests did not: the user's message bubble
@@ -85,6 +103,8 @@ React's types, so the code stays in JavaScript where every file could be run and
 - **`npm install`, `vite` and `vite build` were never run** (no network access during the build). The
   same source files were bundled with esbuild and exercised in Chromium, but the Vite config and the
   dev-server proxy are unexecuted. If `npm run dev` or `npm run build` fails, send me the output.
+- **Real Ollama** has not run here (not installed). The fake server follows Ollama's documented endpoints, but a
+  version difference would only show up on your machine.
 - **The real Claude API and the real MiniLM embedder** have still not run. The browser check used a
   stub LLM and the word-overlap embedder, so it proves the plumbing, not answer quality.
 - The server has been tested on Linux only. File-name handling for Windows paths is unit tested, but

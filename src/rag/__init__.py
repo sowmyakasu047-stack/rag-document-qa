@@ -15,7 +15,7 @@ from rag.errors import (
     VectorStoreError,
 )
 from rag.ingest import ingest_pdf
-from rag.llm import LLM, ClaudeLLM
+from rag.llm import LLM, ClaudeLLM, OllamaLLM, make_llm
 from rag.loader import load_pdf
 from rag.models import Chunk, PageText
 from rag.preprocess import clean_text, strip_repeated_lines
@@ -31,6 +31,7 @@ __all__ = [
     "LLMError",
     "LLMUnavailableError",
     "NOT_FOUND_MESSAGE",
+    "OllamaLLM",
     "Source",
     "Chunk",
     "Embedder",
@@ -51,5 +52,6 @@ __all__ = [
     "clean_text",
     "ingest_pdf",
     "load_pdf",
+    "make_llm",
     "strip_repeated_lines",
 ]

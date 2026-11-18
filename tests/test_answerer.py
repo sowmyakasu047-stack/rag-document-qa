@@ -118,7 +118,7 @@ def test_model_receives_at_most_k_excerpts_and_the_question(retriever, fake_llm)
 
 def test_ask_command_prints_answer_and_sources(make_pdf, fake_llm, monkeypatch, capsys):
     """TC-91: The ask command prints the answer, then a Sources list with file and page."""
-    monkeypatch.setattr(ask, "ClaudeLLM", lambda model: fake_llm("Seventy thousand fans [1]."))
+    monkeypatch.setattr(ask, "make_llm", lambda *args: fake_llm("Seventy thousand fans [1]."))
     path = make_pdf(PAGES, name="guide.pdf")
 
     code = ask.main([str(path), STADIUM_Q, "--embedder", "hashing", "--min-score", "0"])

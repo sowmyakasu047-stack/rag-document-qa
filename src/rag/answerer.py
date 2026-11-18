@@ -65,6 +65,12 @@ def _cited_numbers(text: str) -> list[int]:
     return numbers
 
 
+def _says_not_found(reply: str) -> bool:
+    """True if the reply is the not-found sentence. Smaller models often wrap it in quotes."""
+    cleaned = reply.strip().strip("\"'`\u201c\u201d\u2018\u2019 ").casefold()
+    return cleaned.startswith(NOT_FOUND_MESSAGE.casefold())
+
+
 def _to_sources(results: Sequence[SearchResult]) -> list[Source]:
     return [
         Source(n, r.chunk.source, r.chunk.page, r.chunk.text, r.score)
@@ -104,7 +110,7 @@ class Answerer:
         retrieved = _to_sources(results)
         reply = self.llm.generate(SYSTEM_PROMPT, build_user_prompt(question, results))
 
-        if reply.strip().startswith(NOT_FOUND_MESSAGE):
+        if _says_not_found(reply):
             return Answer(text=NOT_FOUND_MESSAGE, answered=False, retrieved=retrieved)
 
         cited = _cited_numbers(reply)

@@ -249,3 +249,28 @@ unanswerable question showing the not-found note with no sources; Shift+Enter ma
 documents surviving a page reload; removing a document and the question box disabling again; no
 horizontal scroll at phone width; a network failure shown as an error message; and no JavaScript
 errors in the console.
+
+# Day 4 addendum: local model (Ollama)
+
+Adds **15 Python test cases** (TC-129 to TC-143, 143 in total). They run against `tests/fake_ollama.py`,
+a small server that implements Ollama's `/api/tags` and `/api/chat` over real HTTP.
+
+## Ollama client: `tests/test_ollama.py`
+
+| ID | Scenario | Expected result |
+| --- | --- | --- |
+| TC-129 | `generate` against the fake server | Request has the model, system and user messages, `stream: false`, temperature 0 and the context size; the reply text is returned |
+| TC-130 | `llama3.2` when `llama3.2:latest` is installed; `qwen2.5:3b` when only `qwen2.5:7b` is | Untagged name matches `:latest`; a tagged name must match exactly (else error) |
+| TC-131 | Nothing listening at the address | `LLMUnavailableError` "Could not reach Ollama" mentioning `ollama serve` |
+| TC-132 | Model not installed | `LLMUnavailableError` listing installed models and `ollama pull llama3.2` |
+| TC-133 | Chat endpoint returns an HTTP error | `LLMError` containing Ollama's own message |
+| TC-134 | Reply is only whitespace | `LLMError` "empty" |
+| TC-135 | Response is not valid JSON | `LLMError` "could not be read" |
+| TC-136 | Reply wrapped in `<think>…</think>` | Thinking removed; only the answer returned |
+| TC-137 | Address as `http://host:port`, with a trailing slash, and as bare `host:port` (3 cases) | All work |
+| TC-138 | No address given, `OLLAMA_HOST` set | The variable's address is used |
+| TC-139 | `make_llm` with `ollama`, `claude` and an unknown name | Ollama client with default model `llama3.2`; Claude client; `ValueError` |
+| TC-140 | Full flow: retrieval, prompt, HTTP call, citation parsing | Answer with source `guide.pdf` page 2; prompt carries the numbered excerpt |
+| TC-141 | Not-found reply plain, in quotes, upper case in backticks, in curly quotes (4 cases) | Recognised as not answered, no sources |
+| TC-142 | `rag.ask --llm ollama --ollama-url ...` | Exit 0, answer and Sources list printed |
+| TC-143 | `rag.ask --llm ollama` with no Ollama reachable | Exit 1 and "Could not reach Ollama" on stderr |

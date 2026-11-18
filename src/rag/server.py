@@ -5,6 +5,9 @@
     export ANTHROPIC_API_KEY=sk-ant-...
     PYTHONPATH=src python -m rag.server --embedder minilm
 
+    # or with a local model through Ollama (no API key; run 'ollama pull llama3.2' once first):
+    PYTHONPATH=src python -m rag.server --llm ollama
+
 Then open http://127.0.0.1:8000. The index is saved in ``data/index`` and reloaded on
 the next start, so uploaded documents survive a restart.
 """
@@ -21,7 +24,7 @@ from rag.answerer import DEFAULT_MIN_SCORE
 from rag.api import create_app
 from rag.embeddings import DEFAULT_MODEL, Embedder, HashingEmbedder, SentenceTransformerEmbedder
 from rag.errors import RagError
-from rag.llm import LLM, ClaudeLLM
+from rag.llm import ClaudeLLM, make_llm
 from rag.retriever import Retriever
 
 DEFAULT_INDEX_DIR = Path("data") / "index"
@@ -64,6 +67,9 @@ def build_app(
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run the document Q&A web application.")
     parser.add_argument("--embedder", choices=["hashing", "minilm"], default="minilm")
+    parser.add_argument("--llm", choices=["claude", "ollama"], default="claude", help="Which model provider answers")
+    parser.add_argument("--model", help="Model name (default: claude-sonnet-5-5, or llama3.2 for ollama)")
+    parser.add_argument("--ollama-url", help="Ollama address (default: OLLAMA_HOST or http://127.0.0.1:11434)")
     parser.add_argument("--host", default="127.0.0.1", help="Use 0.0.0.0 only on a trusted network")
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--index-dir", type=Path, default=DEFAULT_INDEX_DIR)
@@ -74,6 +80,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         app = build_app(
             make_embedder(args.embedder),
+            llm_factory=lambda: make_llm(args.llm, args.model, args.ollama_url),
             index_dir=args.index_dir,
             frontend_dist=args.frontend_dist,
             min_score=args.min_score,

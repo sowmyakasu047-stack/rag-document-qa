@@ -4,6 +4,9 @@
 
     export ANTHROPIC_API_KEY=sk-ant-...
     PYTHONPATH=src python -m rag.ask file.pdf "What is the main conclusion?" --embedder minilm
+
+    # or with a local model through Ollama (no API key):
+    PYTHONPATH=src python -m rag.ask file.pdf "What is the main conclusion?" --llm ollama
 """
 
 from __future__ import annotations
@@ -16,8 +19,7 @@ from rag.answerer import DEFAULT_K, DEFAULT_MIN_SCORE, Answerer
 from rag.embeddings import DEFAULT_MODEL as EMBEDDING_MODEL
 from rag.embeddings import HashingEmbedder, SentenceTransformerEmbedder
 from rag.errors import RagError
-from rag.llm import DEFAULT_MODEL as LLM_MODEL
-from rag.llm import ClaudeLLM
+from rag.llm import make_llm
 from rag.retriever import Retriever
 
 
@@ -28,11 +30,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--k", type=int, default=DEFAULT_K, help="Excerpts given to the model")
     parser.add_argument("--min-score", type=float, default=DEFAULT_MIN_SCORE)
     parser.add_argument("--embedder", choices=["hashing", "minilm"], default="minilm")
-    parser.add_argument("--model", default=LLM_MODEL, help="Claude model name")
+    parser.add_argument("--llm", choices=["claude", "ollama"], default="claude", help="Which model provider answers")
+    parser.add_argument("--model", help="Model name (default: claude-sonnet-5-5, or llama3.2 for ollama)")
+    parser.add_argument("--ollama-url", help="Ollama address (default: OLLAMA_HOST or http://127.0.0.1:11434)")
     args = parser.parse_args(argv)
 
     try:
-        llm = ClaudeLLM(model=args.model)
+        llm = make_llm(args.llm, args.model, args.ollama_url)
         embedder = (
             HashingEmbedder()
             if args.embedder == "hashing"

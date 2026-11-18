@@ -85,7 +85,9 @@ Installing `sentence-transformers` also installs PyTorch, which is a large downl
 
 The interface's packages (React, Vite) are listed in `frontend/package.json`.
 
-Answer generation needs an Anthropic API key (create one in the Anthropic Console):
+Answer generation needs a language model. Use either Claude (needs an API key) or a model on your own
+computer through Ollama (no key; see [Use a local model](#use-a-local-model-instead-ollama)).
+For Claude, create a key in the Anthropic Console:
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...        # Windows PowerShell: $env:ANTHROPIC_API_KEY="sk-ant-..."
@@ -108,7 +110,7 @@ PYTHONPATH=src python -m rag.server         # PowerShell: $env:PYTHONPATH="src";
 Open <http://127.0.0.1:8000>, upload a PDF, and ask a question. Without an API key you can still
 upload documents; asking shows a notice that answers are unavailable.
 
-Options: `--embedder hashing` (offline word-overlap baseline instead of MiniLM), `--port 8000`,
+Options: `--llm ollama` (local model, no key), `--embedder hashing` (offline word-overlap baseline instead of MiniLM), `--port 8000`,
 `--index-dir data/index`. Uploaded documents are saved in `data/index` and are still there after a
 restart. The first start with MiniLM downloads the model (about 90 MB).
 
@@ -116,6 +118,37 @@ restart. The first start with MiniLM downloads the model (about 90 MB).
 `cd frontend && npm run dev`, then open <http://localhost:5173>. Vite forwards `/api` calls to port 8000.
 
 The server has no login and listens on 127.0.0.1 only. Do not expose it to a network as is.
+
+### Use a local model instead (Ollama)
+
+Ollama runs language models on your own computer: no API key, no per-question cost, and your
+documents never leave the machine.
+
+1. Install Ollama from <https://ollama.com> and make sure it is running (the Windows and Mac apps
+   start it in the background; on Linux run `ollama serve`).
+2. Download a model once (about 2 GB): `ollama pull llama3.2`
+3. Start the app with it:
+
+```bash
+PYTHONPATH=src python -m rag.server --llm ollama                       # llama3.2
+PYTHONPATH=src python -m rag.server --llm ollama --model llama3.1:8b   # larger, better, slower
+PYTHONPATH=src python -m rag.ask file.pdf "Your question" --llm ollama # command line
+```
+
+If Ollama is not running or the model is missing, the page shows what to do, and answering starts
+working as soon as you fix it; no restart is needed. A non-default address can be given with
+`--ollama-url` or the `OLLAMA_HOST` variable.
+
+| | Claude | Ollama (local) |
+| --- | --- | --- |
+| Cost | Pay per question | Free |
+| Setup | API key and billing | Install Ollama, download a model |
+| Privacy | Excerpts are sent to Anthropic | Nothing leaves your computer |
+| Following the citation and "not found" rules | Strong | Weaker with small models; try a bigger one if answers lack citations or ignore the rules |
+| Speed | Seconds | Depends on your hardware; the first question loads the model, and a computer without a GPU can take a minute or more |
+
+The app flags answers without citations with a warning, and recognises the "not found" reply even when a
+small model wraps it in quotes. The wait limit is 5 minutes per answer.
 
 ### HTTP API
 
@@ -230,7 +263,7 @@ Three layers of tests, all listed with their expected behaviour in
 
 | Layer | Command | What it covers |
 | --- | --- | --- |
-| Python | `python -m pytest` | 128 documented test cases (several are parametrized, so pytest reports more): ingestion, retrieval, answering, and the HTTP API called through its full stack |
+| Python | `python -m pytest` | 143 documented test cases (several are parametrized, so pytest reports more): ingestion, retrieval, answering, and the HTTP API called through its full stack |
 | Frontend logic | `cd frontend && npm test` | 14 tests of the API client and citation parsing (needs only Node) |
 | Browser | `python e2e/browser_check.py` | 28 checks in a real browser against the running app with a stub LLM; needs `pip install playwright` and `playwright install chromium` (see the file's header) |
 
@@ -282,9 +315,10 @@ rag-document-qa/
   at least three pages.
 - `HashingEmbedder` matches shared words only and has occasional hash collisions; it is a
   baseline for offline use and tests, not a replacement for the neural embedder.
-- The neural embedder, the FAISS store and the Claude client were written without network
-  access and have not yet been run against the real libraries and API (see
-  `docs/day-02-notes.md` and `docs/day-03-notes.md`).
+- The neural embedder, the Claude client and the Ollama client were written without network access
+  and have not been run against the real services (see `docs/day-02-notes.md`,
+  `docs/day-03-notes.md` and `docs/day-04-notes.md`). The Ollama client is tested against a fake
+  Ollama server that follows Ollama's documented API.
 - `min_score` (default 0.2) is an untuned starting value.
 - Each question is answered on its own; the app does not remember earlier questions in a conversation.
 - Single user, no login: documents are shared by everyone who can reach the server.
