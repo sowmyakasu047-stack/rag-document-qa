@@ -130,3 +130,21 @@ def test_cli_reports_error_for_missing_file(tmp_path, capsys):
 
     assert exit_code == 1
     assert "Error:" in capsys.readouterr().err
+
+
+def test_list_documents_counts_chunks_and_pages_in_insertion_order(retriever, make_pdf):
+    """TC-120: list_documents reports each file's chunk and page counts, first-added first."""
+    retriever.add_pdf(make_pdf([["Tides follow the moon."]], name="sea.pdf"))
+
+    docs = retriever.list_documents()
+
+    assert [(d.name, d.chunks, d.pages) for d in docs] == [("guide.pdf", 3, 3), ("sea.pdf", 1, 1)]
+
+
+def test_remove_document_deletes_only_that_file(retriever, make_pdf):
+    """TC-121: remove_document returns the chunk count removed and leaves other files searchable."""
+    retriever.add_pdf(make_pdf([["Tides follow the moon."]], name="sea.pdf"))
+
+    assert retriever.remove_document("guide.pdf") == 3
+    assert retriever.remove_document("guide.pdf") == 0
+    assert [d.name for d in retriever.list_documents()] == ["sea.pdf"]

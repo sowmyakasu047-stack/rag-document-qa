@@ -161,3 +161,91 @@ so they need no network and no API key.
 | TC-90 | `k=2` | Prompt holds exactly 2 excerpts, the question and the system rules |
 | TC-91 | `ask` command with a fake LLM | Exit 0; prints the answer and a Sources list with file and page |
 | TC-92 | `ask` command without an API key | Exit 1; `Error:` on stderr |
+
+# Day 4 test cases
+
+Day 4 adds **36 Python test cases** (TC-93 to TC-128, 128 in total), **14 frontend test cases**
+(FE-01 to FE-14) and a **28-check browser run**. The Python tests call the application through its
+full stack with real multipart requests, using a fake LLM, so they need no network and no API key.
+
+## HTTP API: `tests/test_api.py`
+
+| ID | Scenario | Expected result |
+| --- | --- | --- |
+| TC-93 | `GET /api/health` | `status: ok`, document count, `llm_ready: true` |
+| TC-94 | Health check when no API key is set | `llm_ready: false` with the reason; server still responds |
+| TC-95 | `GET /api/documents` before any upload | Empty list |
+| TC-96 | Upload a valid 3-page PDF | 201 with `name`, `chunks: 3`, `replaced: false`; then listed with 3 pages |
+| TC-97 | Upload the same file name twice | `replaced: true`; one document in the list |
+| TC-98 | Upload `notes.txt` | 400 `not_a_pdf` |
+| TC-99 | Upload a `.pdf` containing garbage | 400 `invalid_pdf` with a message naming the file |
+| TC-100 | Upload a PDF with no text layer | 422 `no_text` |
+| TC-101 | Upload a password-protected PDF | 400 `encrypted_pdf` |
+| TC-102 | Multipart request without a `file` field | 400 `missing_file` |
+| TC-103 | JSON body sent to the upload endpoint | 400 `missing_file` (no server error) |
+| TC-104 | File slightly over the size limit | 413 `file_too_large`; nothing indexed |
+| TC-105 | Request whose declared size is far over the limit | 413 `file_too_large`, refused up front |
+| TC-106 | Names `../../evil.pdf` and `C:\docs\report.pdf` | Stored as `evil.pdf` and `report.pdf` |
+| TC-107 | `safe_filename` on 9 inputs (paths, unsafe characters, non-PDF, empty, `..`, 300 characters) | Safe base name, or refused |
+| TC-108 | `DELETE` an indexed document (name containing a space) | 204; list is empty |
+| TC-109 | `DELETE` an unknown name | 404 `not_found` |
+| TC-110 | Ask a question the document answers | 200; answer text; `answered: true`; sources with number, file, page, text, score; no warnings |
+| TC-111 | Ask about something not in the document | `answered: false`, not-found message, no sources, LLM never called |
+| TC-112 | Ask with nothing uploaded | 409 `no_documents` |
+| TC-113 | Ask with empty, blank, non-text, missing, non-object or unparsable body (6 cases) | 400 for each; LLM never called |
+| TC-114 | Question over 2000 characters | 400 `question_too_long` |
+| TC-115 | `k` of 0, 11, -1, `"3"`, 2.5, `true`, `null` | 400 `invalid_k` for each |
+| TC-116 | Ask when no API key is configured | 503 `llm_unavailable` with the reason |
+| TC-117 | Ask when the model call fails | 502 `llm_error` |
+| TC-118 | Upload when no API key is configured | Still 201 |
+| TC-119 | Eight uploads sent at the same time | All 201; all eight listed once with 3 chunks each |
+
+## Document listing: `tests/test_retriever.py`
+
+| ID | Scenario | Expected result |
+| --- | --- | --- |
+| TC-120 | Two indexed files | Name, chunk count and page count for each, first-added first |
+| TC-121 | `remove_document` on one of two files, then on a missing file | Returns 3 then 0; the other file remains |
+
+## Server start-up: `tests/test_server.py`
+
+| ID | Scenario | Expected result |
+| --- | --- | --- |
+| TC-122 | Upload, then build a new app on the same index folder | Document still listed and answerable |
+| TC-123 | Delete a document, then restart | Document stays deleted |
+| TC-124 | Start with a folder that does not exist | Empty list; folder and `meta.json` created on first upload |
+| TC-125 | Start with a different embedder than the saved index | `EmbedderMismatchError` |
+| TC-126 | `python -m rag.server` with a mismatched index | Exit 1 with "Rebuild the index" on stderr |
+| TC-127 | Built frontend folder exists | `/` serves its `index.html`; API still works |
+| TC-128 | No frontend folder | `/` returns 404; API still works |
+
+## Frontend logic: `frontend/src/*.test.js` (run with `npm test`)
+
+| ID | Scenario | Expected result |
+| --- | --- | --- |
+| FE-01 | `listDocuments` | Returns the `documents` array |
+| FE-02 | `getHealth` | Returns the health object |
+| FE-03 | `uploadDocument(file)` | POST of multipart form data with the file under `file` |
+| FE-04 | `deleteDocument("my report #1.pdf")` | URL-encoded path; resolves on 204 |
+| FE-05 | `askQuestion` with and without `k` | JSON body; `k` only included when given |
+| FE-06 | Server error response | `ApiError` carrying the server's message, code and status |
+| FE-07 | Error response that is not JSON | Generic "Request failed (502)." message |
+| FE-08 | Network failure | `ApiError` "Could not reach the server" with code `network` |
+| FE-09 | Answer without citations | One text segment |
+| FE-10 | `Fans [1] sit.` | Text, citation 1, text |
+| FE-11 | `[1, 2,3]` | One citation with numbers 1, 2, 3 |
+| FE-12 | `Claim [1][2].` | Two separate citations |
+| FE-13 | `[note]` and `[a, b]` | Left as plain text |
+| FE-14 | Empty string | No segments |
+
+## Browser check: `e2e/browser_check.py` (optional, 28 checks)
+
+Run against the real server with a stub LLM in headless Chromium. Covers: the empty state and the
+disabled question box; a non-PDF and a text-less PDF each showing their error and listing nothing;
+a successful upload (listed with page and passage counts, status message); asking with Enter;
+the answer, its citation link, and the source's file and page; the source passage opening when the
+citation is clicked; the input clearing after sending; a second question citing page 2; an
+unanswerable question showing the not-found note with no sources; Shift+Enter making a new line;
+documents surviving a page reload; removing a document and the question box disabling again; no
+horizontal scroll at phone width; a network failure shown as an error message; and no JavaScript
+errors in the console.

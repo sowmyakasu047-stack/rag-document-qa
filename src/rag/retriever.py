@@ -7,6 +7,7 @@ similarity search). Day 3 hands the chunks it returns to the LLM.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Sequence
 
@@ -18,6 +19,21 @@ from rag.models import Chunk
 from rag.vectorstore import SearchResult, VectorStore
 
 _EMBED_BATCH = 64
+
+
+@dataclass(frozen=True)
+class DocumentInfo:
+    """A document held in the index.
+
+    Attributes:
+        name: File name, which is also the ``source`` of its chunks.
+        chunks: Number of chunks indexed.
+        pages: Number of pages that contributed text.
+    """
+
+    name: str
+    chunks: int
+    pages: int
 
 
 class Retriever:
@@ -63,6 +79,19 @@ class Retriever:
             raise ValueError("Query must not be empty.")
         vector = self.embedder.embed([query])[0]
         return self.store.search(vector, k=k, min_score=min_score)
+
+    def list_documents(self) -> list[DocumentInfo]:
+        """Describe the indexed documents, in the order they were first added."""
+        chunks: dict[str, int] = {}
+        pages: dict[str, set[int]] = {}
+        for chunk in self.store.chunks:
+            chunks[chunk.source] = chunks.get(chunk.source, 0) + 1
+            pages.setdefault(chunk.source, set()).add(chunk.page)
+        return [DocumentInfo(name, chunks[name], len(pages[name])) for name in chunks]
+
+    def remove_document(self, name: str) -> int:
+        """Remove a document from the index; return how many chunks were removed."""
+        return self.store.remove_source(name)
 
     def save(self, directory: str | Path) -> None:
         self.store.save(directory)

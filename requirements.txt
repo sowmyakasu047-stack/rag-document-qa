@@ -3,3 +3,6 @@ numpy>=1.26
 sentence-transformers>=3.0
 faiss-cpu>=1.8
 anthropic>=0.40
+starlette>=0.40
+uvicorn>=0.30
+python-multipart>=0.0.9
