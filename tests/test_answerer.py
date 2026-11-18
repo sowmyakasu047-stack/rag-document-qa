@@ -137,3 +137,64 @@ def test_ask_command_reports_missing_api_key(make_pdf, monkeypatch, capsys):
 
     assert code == 1
     assert "Error:" in capsys.readouterr().err
+
+
+PTO_PAGES = [["Employees get 18 days of paid time off each year.", "After three years this rises to 23 days."]]
+
+
+@pytest.fixture
+def pto_retriever(make_pdf) -> Retriever:
+    r = Retriever(HashingEmbedder())
+    r.add_pdf(make_pdf(PTO_PAGES, name="pto.pdf"))
+    return r
+
+
+def test_invented_figure_adds_a_warning_but_keeps_the_answer(pto_retriever, fake_llm):
+    """TC-155: 'You get 25 days [1]' when the document says 18 returns the answer with a figures warning."""
+    answer = Answerer(pto_retriever, fake_llm("You get 25 days of paid time off [1]."), k=2, min_score=None).ask(
+        "How many days of paid time off do employees get?"
+    )
+
+    assert answer.answered and [s.page for s in answer.sources] == [1]
+    assert any("25" in w and "do not appear in the excerpts" in w for w in answer.warnings)
+
+
+def test_supported_figures_add_no_warning(pto_retriever, fake_llm):
+    """TC-156: '18 days [1]' with 18 in the excerpt produces no warnings."""
+    answer = Answerer(pto_retriever, fake_llm("Employees get 18 days [1]."), k=2, min_score=None).ask(
+        "How many days of paid time off do employees get?"
+    )
+
+    assert answer.answered and answer.warnings == []
+
+
+def test_require_citations_withholds_an_uncited_answer(pto_retriever, fake_llm):
+    """TC-157: With require_citations, a reply that cites nothing is withheld and reported."""
+    answer = Answerer(
+        pto_retriever, fake_llm("Employees get 18 days."), k=2, min_score=None, require_citations=True
+    ).ask("How many days of paid time off do employees get?")
+
+    assert not answer.answered and answer.text == NOT_FOUND_MESSAGE and answer.sources == []
+    assert any("withheld" in w for w in answer.warnings)
+    assert len(answer.retrieved) == 1
+
+
+def test_require_citations_keeps_a_cited_answer(pto_retriever, fake_llm):
+    """TC-158: With require_citations, a properly cited reply is returned as normal."""
+    answer = Answerer(
+        pto_retriever, fake_llm("Employees get 18 days [1]."), k=2, min_score=None, require_citations=True
+    ).ask("How many days of paid time off do employees get?")
+
+    assert answer.answered and [s.number for s in answer.sources] == [1]
+
+
+def test_ask_command_can_withhold_uncited_answers(make_pdf, fake_llm, monkeypatch, capsys):
+    """TC-159: 'ask --require-citations' prints the not-found message and the reason for an uncited reply."""
+    monkeypatch.setattr(ask, "make_llm", lambda *args: fake_llm("Employees get 18 days."))
+    path = make_pdf(PTO_PAGES, name="pto.pdf")
+
+    code = ask.main([str(path), "How many days of paid time off?", "--embedder", "hashing", "--min-score", "0",
+                     "--require-citations"])
+
+    out = capsys.readouterr().out
+    assert code == 0 and NOT_FOUND_MESSAGE in out and "withheld" in out

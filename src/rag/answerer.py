@@ -4,11 +4,15 @@ Flow: retrieve chunks, drop weak matches, ask the LLM to answer from them, then
 check the reply instead of trusting it: find which excerpts it cited, ignore
 citations to excerpts that do not exist, and detect the "not found" sentence.
 
-Two cases never reach the LLM or are never presented as answers:
+Guards against hallucination, in the order they act:
 
-* nothing relevant was retrieved (every chunk is below ``min_score``): the fixed
-  not-found message is returned without any model call;
-* the model itself says the excerpts do not contain the answer.
+1. nothing relevant was retrieved (every chunk is below ``min_score``): the fixed not-found
+   message is returned without any model call;
+2. the prompt limits the model to the excerpts and gives it an exact "not found" sentence;
+3. the model saying "not found" is recognised, and no sources are shown for it;
+4. citations that point at excerpts which do not exist are dropped and reported;
+5. figures in the answer that appear in no excerpt are reported (``rag.grounding``);
+6. optionally (``require_citations``) an answer that cites nothing is withheld.
 """
 
 from __future__ import annotations
@@ -17,6 +21,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Sequence
 
+from rag.grounding import unsupported_numbers
 from rag.llm import LLM
 from rag.prompt import NOT_FOUND_MESSAGE, SYSTEM_PROMPT, build_user_prompt
 from rag.retriever import Retriever
@@ -87,11 +92,13 @@ class Answerer:
         llm: LLM,
         k: int = DEFAULT_K,
         min_score: float | None = DEFAULT_MIN_SCORE,
+        require_citations: bool = False,
     ) -> None:
         self.retriever = retriever
         self.llm = llm
         self.k = k
         self.min_score = min_score
+        self.require_citations = require_citations
 
     def ask(self, question: str) -> Answer:
         """Answer ``question`` from the indexed documents.
@@ -117,12 +124,28 @@ class Answerer:
         valid = sorted({n for n in cited if 1 <= n <= len(retrieved)})
         invalid = sorted({n for n in cited if n not in valid})
 
+        if self.require_citations and not valid:
+            return Answer(
+                text=NOT_FOUND_MESSAGE,
+                answered=False,
+                retrieved=retrieved,
+                warnings=["The model's reply did not cite any excerpt, so it was withheld."],
+            )
+
         warnings = []
         if not valid:
             warnings.append("The answer does not cite any excerpt; treat it with caution.")
         if invalid:
             listed = ", ".join(f"[{n}]" for n in invalid)
             warnings.append(f"The answer cites excerpts that were not provided: {listed}.")
+        unsupported = unsupported_numbers(
+            reply, question, [source.text for source in retrieved], [source.page for source in retrieved]
+        )
+        if unsupported:
+            warnings.append(
+                "The answer contains figures that do not appear in the excerpts "
+                f"({', '.join(unsupported)}). Check them against the document."
+            )
 
         return Answer(
             text=reply.strip(),

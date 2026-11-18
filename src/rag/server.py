@@ -43,6 +43,7 @@ def build_app(
     index_dir: str | Path | None = DEFAULT_INDEX_DIR,
     frontend_dist: str | Path | None = DEFAULT_FRONTEND_DIST,
     min_score: float | None = DEFAULT_MIN_SCORE,
+    require_citations: bool = False,
 ) -> Starlette:
     """Create the app, loading a previously saved index when one exists.
 
@@ -61,6 +62,7 @@ def build_app(
         persist_dir=index_path,
         frontend_dist=frontend_dist,
         min_score=min_score,
+        require_citations=require_citations,
     )
 
 
@@ -75,6 +77,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--index-dir", type=Path, default=DEFAULT_INDEX_DIR)
     parser.add_argument("--frontend-dist", type=Path, default=DEFAULT_FRONTEND_DIST)
     parser.add_argument("--min-score", type=float, default=DEFAULT_MIN_SCORE)
+    parser.add_argument(
+        "--require-citations",
+        action="store_true",
+        help="Withhold answers in which the model cited no excerpt (stricter; small models may fail it often)",
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -84,6 +91,7 @@ def main(argv: list[str] | None = None) -> int:
             index_dir=args.index_dir,
             frontend_dist=args.frontend_dist,
             min_score=args.min_score,
+            require_citations=args.require_citations,
         )
     except RagError as exc:
         print(f"Error: {exc}", file=sys.stderr)

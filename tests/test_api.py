@@ -364,3 +364,14 @@ def test_concurrent_uploads_do_not_corrupt_the_index(make_app, make_pdf):
     listed = request(app, "GET", "/api/documents").json()["documents"]
     assert sorted(d["name"] for d in listed) == sorted(names)
     assert all(d["chunks"] == 3 for d in listed)
+
+
+def test_require_citations_setting_reaches_the_api(make_app, pdf_bytes, fake_llm):
+    """TC-160: An app built with require_citations withholds an uncited answer (answered false)."""
+    app, _ = make_app(llm=fake_llm("About seventy thousand."), require_citations=True)
+    upload(app, pdf_bytes())
+
+    body = request(app, "POST", "/api/ask", json_body={"question": "How many fans does the stadium seat?"}).json()
+
+    assert body["answered"] is False and body["sources"] == []
+    assert any("withheld" in w for w in body["warnings"])

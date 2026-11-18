@@ -149,6 +149,7 @@ def create_app(
     persist_dir: str | Path | None = None,
     frontend_dist: str | Path | None = None,
     min_score: float | None = DEFAULT_MIN_SCORE,
+    require_citations: bool = False,
     max_upload_bytes: int = MAX_UPLOAD_BYTES,
 ) -> Starlette:
     """Build the web application.
@@ -160,6 +161,7 @@ def create_app(
         persist_dir: If set, the index is saved here after every upload or delete.
         frontend_dist: If this folder exists, it is served at ``/`` (the built React app).
         min_score: Similarity below which excerpts are ignored when answering.
+        require_citations: Withhold answers in which the model cited no excerpt.
         max_upload_bytes: Largest accepted PDF.
     """
     service = SafeRetriever(retriever, Path(persist_dir) if persist_dir else None)
@@ -258,7 +260,9 @@ def create_app(
 
         try:
             llm = get_llm()
-            answerer = Answerer(service, llm, k=k, min_score=min_score)  # type: ignore[arg-type]
+            answerer = Answerer(  # type: ignore[arg-type]
+                service, llm, k=k, min_score=min_score, require_citations=require_citations
+            )
             answer = await run_in_threadpool(answerer.ask, question)
         except LLMUnavailableError as exc:
             return error_response(503, "llm_unavailable", str(exc))

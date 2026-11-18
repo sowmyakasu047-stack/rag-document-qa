@@ -274,3 +274,49 @@ a small server that implements Ollama's `/api/tags` and `/api/chat` over real HT
 | TC-141 | Not-found reply plain, in quotes, upper case in backticks, in curly quotes (4 cases) | Recognised as not answered, no sources |
 | TC-142 | `rag.ask --llm ollama --ollama-url ...` | Exit 0, answer and Sources list printed |
 | TC-143 | `rag.ask --llm ollama` with no Ollama reachable | Exit 1 and "Could not reach Ollama" on stderr |
+
+# Day 5 addendum: guards and evaluation
+
+Adds **37 Python test cases** (TC-144 to TC-180, 180 in total). The first group covers the
+figure-grounding check and `--require-citations`; the second covers the evaluation harness
+(`rag.evaluate`). In these tables each row gives the test file and what the case checks.
+
+| ID | File | What the case checks |
+| --- | --- | --- |
+| TC-144 | `test_grounding.py` | Every figure in the answer appears in an excerpt, so nothing is reported. |
+| TC-145 | `test_grounding.py` | An answer saying 25 days when the document says 18 is flagged. |
+| TC-146 | `test_grounding.py` | '$2,500' in an excerpt supports '2500' and '2,500'; '4%' supports '4 percent'. |
+| TC-147 | `test_grounding.py` | 'After 4 years you get 23 days' is fine when the 4 came from the question. |
+| TC-148 | `test_grounding.py` | 'see page 2' is supported when an excerpt came from page 2. |
+| TC-149 | `test_grounding.py` | '[1]', '[2, 3]' and leading '1.' / '2)' list markers are not treated as figures. |
+| TC-150 | `test_grounding.py` | '4.5' is supported by '4.5 percent' but '4.6' is flagged. |
+| TC-151 | `test_grounding.py` | Repeated figures are listed once, in order of first appearance. |
+| TC-152 | `test_grounding.py` | Text with no digits can never be flagged. |
+| TC-153 | `test_grounding.py` | '... costs 600.' matches an excerpt's '$600'. |
+| TC-154 | `test_grounding.py` | Digits in the answer are flagged when the excerpt spells the number out. This documents the limit stated in the module: the check is a warning signal, not proof. |
+| TC-155 | `test_answerer.py` | 'You get 25 days [1]' when the document says 18 returns the answer with a figures warning. |
+| TC-156 | `test_answerer.py` | '18 days [1]' with 18 in the excerpt produces no warnings. |
+| TC-157 | `test_answerer.py` | With require_citations, a reply that cites nothing is withheld and reported. |
+| TC-158 | `test_answerer.py` | With require_citations, a properly cited reply is returned as normal. |
+| TC-159 | `test_answerer.py` | 'ask --require-citations' prints the not-found message and the reason for an uncited reply. |
+| TC-160 | `test_api.py` | An app built with require_citations withholds an uncited answer (answered false). |
+| TC-161 | `test_evaluate.py` | A valid dataset loads into cases with pages, expectations and flags. |
+| TC-162 | `test_evaluate.py` | Blank text, an answerable question with no pages, a repeated id or a missing field is rejected. |
+| TC-163 | `test_evaluate.py` | A missing file, invalid JSON and JSON without 'questions' each raise ValueError. |
+| TC-164 | `test_evaluate.py` | The dataset shipped in eval/ loads, has 15+ cases and both answerable and unanswerable ones. |
+| TC-165 | `test_evaluate.py` | Right page cited and expected text present gives 'pass'. |
+| TC-166 | `test_evaluate.py` | Wrong cited page, missing expected text and forbidden text are each reported. |
+| TC-167 | `test_evaluate.py` | An expect group is satisfied by any one of its alternatives. |
+| TC-168 | `test_evaluate.py` | Declining a question the document answers is a failure. |
+| TC-169 | `test_evaluate.py` | Declining passes; answering fails, or is flagged for review when the case allows partial answers. |
+| TC-170 | `test_evaluate.py` | The question about the stadium ranks page 3 first; rows record rank and scores. |
+| TC-171 | `test_evaluate.py` | hit@1, hit@k, mean reciprocal rank and multi-page coverage come out as expected. |
+| TC-172 | `test_evaluate.py` | The recommended cut-off keeps 90% of answerable questions and blocks the weak unanswerable ones. |
+| TC-173 | `test_evaluate.py` | With no answerable questions there is nothing to recommend, and nothing crashes. |
+| TC-174 | `test_evaluate.py` | With a scripted model both cases pass and the summary counts them per group. |
+| TC-175 | `test_evaluate.py` | A model that answers every question the same way fails the unanswerable case. |
+| TC-176 | `test_evaluate.py` | Retrieval mode needs no model, prints the table and recommendation, and exits 0. |
+| TC-177 | `test_evaluate.py` | Answers mode prints verdicts, writes both reports, and exits 0 when nothing fails. |
+| TC-178 | `test_evaluate.py` | A failing case makes the command exit 1, so it can gate a build. |
+| TC-179 | `test_evaluate.py` | A missing dataset, a missing PDF and a dataset without a document each print 'Error:' and exit 1. |
+| TC-180 | `test_evaluate.py` | The word-overlap baseline still finds the right page in the top 4 for most answerable questions. |

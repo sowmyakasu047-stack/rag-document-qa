@@ -29,6 +29,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("question", help="The question to answer")
     parser.add_argument("--k", type=int, default=DEFAULT_K, help="Excerpts given to the model")
     parser.add_argument("--min-score", type=float, default=DEFAULT_MIN_SCORE)
+    parser.add_argument("--require-citations", action="store_true", help="Withhold answers that cite no excerpt")
     parser.add_argument("--embedder", choices=["hashing", "minilm"], default="minilm")
     parser.add_argument("--llm", choices=["claude", "ollama"], default="claude", help="Which model provider answers")
     parser.add_argument("--model", help="Model name (default: claude-sonnet-5-5, or llama3.2 for ollama)")
@@ -44,7 +45,9 @@ def main(argv: list[str] | None = None) -> int:
         )
         retriever = Retriever(embedder)
         retriever.add_pdf(args.pdf)
-        answer = Answerer(retriever, llm, k=args.k, min_score=args.min_score).ask(args.question)
+        answer = Answerer(
+            retriever, llm, k=args.k, min_score=args.min_score, require_citations=args.require_citations
+        ).ask(args.question)
     except (RagError, FileNotFoundError, ValueError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
