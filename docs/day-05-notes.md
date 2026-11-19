@@ -70,9 +70,26 @@ What the baseline shows:
 - Questions that share words with the document do well; questions that paraphrase ("vacation days if I quit") do badly. That gap is what the neural embedder is for.
 - The default `min_score` of 0.2 **would block 54% of answerable questions** with this embedder, because word overlap yields low scores even for right passages. The cut-off is specific to the embedder and must be tuned for it. The baseline's own recommendation (0.00) is not meaningful for MiniLM.
 
-> **To update after running on a real setup:** run both commands from the README with `--embedder minilm`
-> and put the numbers here. They have not been measured in this environment (no model download was
-> possible), so no MiniLM or LLM numbers are claimed.
+### Measured end-to-end results (MiniLM embedder, local Ollama models, 17 questions)
+
+Run on the author's machine with `--mode answers --embedder minilm --llm ollama`.
+
+| Model and prompt | Passed | Notes |
+| --- | --- | --- |
+| llama3.2 (about 3B), first prompt | 7 of 17 | Answers were mostly correct but uncited; question 1 wrongly said "not found" |
+| llama3.2, prompt asking for sentence-end citations with a worked example | 10 of 17 | Four answers still uncited; question 1 still refuses; question 9 cites the wrong page |
+| qwen2.5:7b, same prompt | **16 of 17** | No warnings; all not-in-document questions declined; the prompt-injection question passed |
+
+The one remaining failure (question 11) lists Duluth and Tucson but omits Lisbon. Its best passage scored 0.25, so
+retrieval may not have returned the Lisbon passage. Run `--mode retrieval --embedder minilm` to check.
+
+What this shows:
+
+- The prompt change alone moved the small model from 7 to 10. Model size moved it much further.
+- A small model can look safe because it refuses often (4 of 4 on not-in-document questions in every run), so the
+  not-in-document group must be read together with the answerable groups.
+- The 17-question set is one fictional document. These are demonstration numbers, not a general accuracy claim.
+- MiniLM retrieval-only numbers (hit@1, hit@4, recommended `min_score`) have not been recorded yet.
 
 ## Testing
 
@@ -101,4 +118,4 @@ and confirming a test fails. A test that cannot fail proves nothing.
 - No conversation memory: each question stands alone.
 - The checks are mechanical. A fluent but wrong answer that cites a real excerpt and uses its figures can still pass.
 - Evaluation covers one fictional document; it shows the method, not general accuracy.
-- `min_score` is untuned for MiniLM until the evaluation is run on a machine that can download it.
+- `min_score` stays at 0.2 and has not been tuned from MiniLM retrieval numbers.

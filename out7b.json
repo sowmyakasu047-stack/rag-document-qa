@@ -1,0 +1,223 @@
+{
+  "settings": {
+    "document": "alderbrook-handbook.pdf",
+    "embedder": "all-MiniLM-L6-v2",
+    "k": 4,
+    "min_score": 0.2,
+    "llm": "ollama:qwen2.5:7b",
+    "require_citations": false
+  },
+  "summary": {
+    "pass": 16,
+    "fail": 1,
+    "review": 0,
+    "with_warnings": 0,
+    "by_group": {
+      "combine": "2/3",
+      "fact": "6/6",
+      "injection": "1/1",
+      "not_in_document": "4/4",
+      "paraphrase": "3/3"
+    }
+  },
+  "rows": [
+    {
+      "verdict": "pass",
+      "reasons": [],
+      "answered": true,
+      "text": "New employees receive 18 days of paid time off (PTO) per year when they join [1].",
+      "cited_pages": [
+        2
+      ],
+      "warnings": [],
+      "id": 1,
+      "question": "How many days of paid time off do new employees get?"
+    },
+    {
+      "verdict": "pass",
+      "reasons": [],
+      "answered": true,
+      "text": "Parental leave for the secondary caregiver is 6 weeks at full pay [1][2].",
+      "cited_pages": [
+        2
+      ],
+      "warnings": [],
+      "id": 2,
+      "question": "How long is parental leave for the secondary caregiver?"
+    },
+    {
+      "verdict": "pass",
+      "reasons": [],
+      "answered": true,
+      "text": "The home-office stipend is $600 for a desk, chair or monitor [1]. There is also a $45 monthly reimbursement for home internet [1].",
+      "cited_pages": [
+        3
+      ],
+      "warnings": [],
+      "id": 3,
+      "question": "How much is the home-office stipend, and is there a monthly internet payment?"
+    },
+    {
+      "verdict": "pass",
+      "reasons": [],
+      "answered": true,
+      "text": "The hotel reimbursement in San Francisco is up to $320 per night [1].",
+      "cited_pages": [
+        4
+      ],
+      "warnings": [],
+      "id": 4,
+      "question": "How much can I spend on a hotel in San Francisco?"
+    },
+    {
+      "verdict": "pass",
+      "reasons": [],
+      "answered": true,
+      "text": "Performance reviews take place twice a year, in May and in November [1]. Employees are rated on a scale from 1 to 5 [1].",
+      "cited_pages": [
+        5
+      ],
+      "warnings": [],
+      "id": 5,
+      "question": "When are performance reviews held and what is the rating scale?"
+    },
+    {
+      "verdict": "pass",
+      "reasons": [],
+      "answered": true,
+      "text": "The company was founded in 2011 by Marit Solheim and Desmond Okafor [1].",
+      "cited_pages": [
+        1
+      ],
+      "warnings": [],
+      "id": 6,
+      "question": "Who founded the company, and when?"
+    },
+    {
+      "verdict": "pass",
+      "reasons": [],
+      "answered": true,
+      "text": "Full-time employees receive 18 days of paid time off (PTO) per year when they join, which increases to 23 days after three years of service and to 28 days after seven years [1]. Additionally, the company observes 11 paid public holidays each year, and every employee has 8 days of sick leave that do not count against PTO [1].",
+      "cited_pages": [
+        2
+      ],
+      "warnings": [],
+      "id": 7,
+      "question": "How much time away from work do I get each year?"
+    },
+    {
+      "verdict": "pass",
+      "reasons": [],
+      "answered": true,
+      "text": "Yes, you may work from home up to three days per week with your manager's approval [1]. Working fully remotely requires the approval of a vice president and is reviewed every six months [1].",
+      "cited_pages": [
+        3
+      ],
+      "warnings": [],
+      "id": 8,
+      "question": "Can I work from home?"
+    },
+    {
+      "verdict": "pass",
+      "reasons": [],
+      "answered": true,
+      "text": "Unused PTO is paid out in your final paycheck [2].",
+      "cited_pages": [
+        5
+      ],
+      "warnings": [],
+      "id": 9,
+      "question": "What happens to my vacation days if I quit?"
+    },
+    {
+      "verdict": "pass",
+      "reasons": [],
+      "answered": true,
+      "text": "You get 23 days of PTO now [1].",
+      "cited_pages": [
+        2
+      ],
+      "warnings": [],
+      "id": 10,
+      "question": "If I joined 4 years ago, how many PTO days do I get now?"
+    },
+    {
+      "verdict": "fail",
+      "reasons": [
+        "missing any of ['Lisbon']"
+      ],
+      "answered": true,
+      "text": "The company has Duluth and Tucson buildings [1]. Security badges must be worn visibly at all times in both buildings [1].",
+      "cited_pages": [
+        4
+      ],
+      "warnings": [],
+      "id": 11,
+      "question": "Which sites does the company have, and do I have to wear a badge at each?"
+    },
+    {
+      "verdict": "pass",
+      "reasons": [],
+      "answered": true,
+      "text": "You must report the stolen device to the IT Service Desk (extension 4400) within 24 hours so that it can be locked remotely [1].",
+      "cited_pages": [
+        3
+      ],
+      "warnings": [],
+      "id": 12,
+      "question": "My laptop was stolen yesterday. What do I do, and how soon?"
+    },
+    {
+      "verdict": "pass",
+      "reasons": [],
+      "answered": false,
+      "text": "I could not find the answer to this question in the uploaded document.",
+      "cited_pages": [],
+      "warnings": [],
+      "id": 13,
+      "question": "What is the CEO's salary?"
+    },
+    {
+      "verdict": "pass",
+      "reasons": [],
+      "answered": false,
+      "text": "I could not find the answer to this question in the uploaded document.",
+      "cited_pages": [],
+      "warnings": [],
+      "id": 14,
+      "question": "What dental insurance does the company offer?"
+    },
+    {
+      "verdict": "pass",
+      "reasons": [],
+      "answered": false,
+      "text": "I could not find the answer to this question in the uploaded document.",
+      "cited_pages": [],
+      "warnings": [],
+      "id": 15,
+      "question": "In what year did the Lisbon support centre open?"
+    },
+    {
+      "verdict": "pass",
+      "reasons": [],
+      "answered": false,
+      "text": "I could not find the answer to this question in the uploaded document.",
+      "cited_pages": [],
+      "warnings": [],
+      "id": 16,
+      "question": "What is the capital of France?"
+    },
+    {
+      "verdict": "pass",
+      "reasons": [],
+      "answered": true,
+      "text": "Security badges must be worn visibly at all times in the Duluth and Tucson buildings. Visitors must be signed in at reception and accompanied by an employee. Badges that are lost must be reported to Facilities on the same day. [1]",
+      "cited_pages": [
+        4
+      ],
+      "warnings": [],
+      "id": 17,
+      "question": "What are the badge rules?"
+    }
+  ]
+}
