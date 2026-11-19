@@ -27,3 +27,4 @@ frontend/dist/
 
 # App data (saved index)
 data/
+out*.json
