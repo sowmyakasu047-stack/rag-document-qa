@@ -347,8 +347,11 @@ rag-document-qa/
   and have not been run against the real services (see `docs/day-02-notes.md`,
   `docs/day-03-notes.md` and `docs/day-04-notes.md`). The Ollama client is tested against a fake
   Ollama server that follows Ollama's documented API.
-- `min_score` (default 0.2) is an untuned starting value. With the word-overlap embedder it blocks about half of the
-  answerable evaluation questions; run the evaluation with MiniLM and use the value it recommends.
+- `min_score` (default 0.2) was checked with MiniLM on the 17-question evaluation: it keeps every answerable
+  question's right passage and blocks half of the unanswerable ones. Raising it to 0.30 blocks all unanswerable
+  questions but drops about a third of answerable ones, so 0.2 is kept and the prompt rules handle the rest.
+  The right value depends on the embedder and the document; re-run the evaluation if you change either.
+- Local models: `qwen2.5:7b` followed the citation rules far better than `llama3.2` in the evaluation (16 vs 10 of 17).
 - The figure check does not compare numbers written as words ("eighteen") with digits, and its warnings
   are mechanical: a fluent wrong answer that cites a real excerpt can still pass.
 - The evaluation covers one fictional document. No numbers for MiniLM or a real model are published here

@@ -80,8 +80,9 @@ Run on the author's machine with `--mode answers --embedder minilm --llm ollama`
 | llama3.2, prompt asking for sentence-end citations with a worked example | 10 of 17 | Four answers still uncited; question 1 still refuses; question 9 cites the wrong page |
 | qwen2.5:7b, same prompt | **16 of 17** | No warnings; all not-in-document questions declined; the prompt-injection question passed |
 
-The one remaining failure (question 11) lists Duluth and Tucson but omits Lisbon. Its best passage scored 0.25, so
-retrieval may not have returned the Lisbon passage. Run `--mode retrieval --embedder minilm` to check.
+The one remaining failure (question 11) lists Duluth and Tucson but omits Lisbon. Retrieval was not the cause: the
+retrieval run shows the correct page ranked first and all needed pages in the top 4. The model left a site out of a
+multi-part answer.
 
 What this shows:
 
@@ -89,7 +90,22 @@ What this shows:
 - A small model can look safe because it refuses often (4 of 4 on not-in-document questions in every run), so the
   not-in-document group must be read together with the answerable groups.
 - The 17-question set is one fictional document. These are demonstration numbers, not a general accuracy claim.
-- MiniLM retrieval-only numbers (hit@1, hit@4, recommended `min_score`) have not been recorded yet.
+
+### Measured retrieval (MiniLM, no language model)
+
+| Measure | Baseline (word overlap) | MiniLM |
+| --- | --- | --- |
+| Correct page ranked first (hit@1) | 69% | **92%** |
+| Correct page in the top 4 | 85% | **100%** |
+| Mean reciprocal rank | 0.79 | **0.96** |
+| Multi-page questions fully found | 0 of 1 | 1 of 1 |
+
+`min_score` trade-off with MiniLM: at 0.20 every answerable question keeps its right passage and 50% of unanswerable
+questions are cut off before the model is called; at 0.30 all unanswerable questions are cut off but only 69% of
+answerable ones survive. The tool recommends 0.24 (92% kept, 50% blocked). The default stays at 0.20 because wrongly
+refusing a valid question costs more than letting the model decline an unanswerable one, and the prompt rules did
+decline all four in every run. The two unanswerable questions that pass the cut-off (CEO salary at 0.29, dental
+insurance at 0.27) score as high as real answers, which is why the prompt and the checks are still needed.
 
 ## Testing
 
